@@ -374,3 +374,57 @@ class BasketSystemTest < Minitest::Test
   end
 end
 =end
+
+# Update Test Cases (inside `BasketSystemTest`):
+=begin
+# ... (existing tests) ...
+
+  # --- Example Basket Tests from the Problem Description ---
+  # These tests directly verify the example outputs provided in the prompt.
+
+  def test_example_basket_b01_g01
+    basket = Basket.new(product_catalogue: @catalogue, delivery_charge_rules: @delivery_rules, offers: @offers)
+    basket.add('B01')
+    basket.add('G01')
+    # B01 (7.95) + G01 (24.95) = 32.90. No offer. Delivery for 32.90 (< $50) = 4.95. Total = 32.90 + 4.95 = 37.85
+    assert_equal 37.85, basket.total
+  end
+
+  def test_example_basket_r01_r01
+    basket = Basket.new(product_catalogue: @catalogue, delivery_charge_rules: @delivery_rules, offers: @offers)
+    basket.add('R01')
+    basket.add('R01')
+    # R01 (32.95) + R01 (32.95) = 65.90.
+    # Offer: one R01 half price (32.95 / 2).round(2) = 16.48 discount.
+    # Post-offer subtotal = 65.90 - 16.48 = 49.42.
+    # Delivery for 49.42 (< $50) = 4.95.
+    # Total = 49.42 + 4.95 = 54.37.
+    assert_equal 54.37, basket.total
+  end
+
+  def test_example_basket_r01_g01
+    basket = Basket.new(product_catalogue: @catalogue, delivery_charge_rules: @delivery_rules, offers: @offers)
+    basket.add('R01')
+    basket.add('G01')
+    # R01 (32.95) + G01 (24.95) = 57.90. No offer (only one R01).
+    # Delivery for 57.90 (>= $50 and < $90) = 2.95.
+    # Total = 57.90 + 2.95 = 60.85.
+    assert_equal 60.85, basket.total
+  end
+
+  def test_example_basket_b01_b01_r01_r01_r01
+    basket = Basket.new(product_catalogue: @catalogue, delivery_charge_rules: @delivery_rules, offers: @offers)
+    basket.add('B01')
+    basket.add('B01')
+    basket.add('R01')
+    basket.add('R01')
+    basket.add('R01')
+    # B01 (7.95*2) + R01 (32.95*3) = 15.90 + 98.85 = 114.75.
+    # Offer: Three R01s -> one R01 half price (16.48 discount).
+    # Post-offer subtotal = 114.75 - 16.48 = 98.27.
+    # Delivery for 98.27 (>= $90) = 0.00.
+    # Total = 98.27 + 0.00 = 98.27.
+    assert_equal 98.27, basket.total
+  end
+end
+=end

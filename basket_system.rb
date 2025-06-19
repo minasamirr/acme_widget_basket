@@ -101,3 +101,66 @@ class BasketSystemTest < Minitest::Test
   end
 end
 =end
+
+# Encapsulates the logic for calculating delivery charges based on the basket's total value.
+# The rules are defined by thresholds and associated costs.
+class DeliveryChargeRules
+  # Initializes DeliveryChargeRules with a set of predefined rules.
+  # The rules should be provided as an array of hashes, where each hash
+  # has a `:threshold` (the minimum total for this rule to apply) and `:cost`.
+  # It's crucial that the rules are sorted in descending order of their threshold
+  # to ensure the correct rule is matched (e.g., $90+ free delivery should be checked before $50+).
+  #
+  # @param rules [Array<Hash>] An array of rule hashes, e.g.,
+  #   `[{ threshold: 90.0, cost: 0.0 }, { threshold: 50.0, cost: 2.95 }, { threshold: 0.0, cost: 4.95 }]`
+  def initialize(rules)
+    # Sort rules by threshold in descending order to apply the highest applicable threshold first.
+    @rules = rules.sort_by { |rule| -rule[:threshold] }
+  end
+
+  # Calculates the delivery cost for a given basket total.
+  #
+  # @param total [Float] The current total value of the basket (after offers, before delivery).
+  # @return [Float] The calculated delivery cost. Returns 0.0 if no rule matches (though
+  #   a rule with threshold 0.0 should always be present as a fallback).
+  def calculate(total)
+    # Find the first rule whose threshold is met by the given total.
+    rule = @rules.find { |r| total >= r[:threshold] }
+    rule ? rule[:cost] : 0.0
+  end
+end
+
+# Add to Configuration Data:
+DELIVERY_RULES_DATA = [
+  { threshold: 90.0, cost: 0.0 }, # Orders $90 or more have free delivery
+  { threshold: 50.0, cost: 2.95 }, # For orders under $90 (but >= $50), delivery costs $2.95
+  { threshold: 0.0, cost: 4.95 } # Orders under $50 (but >= $0), cost $4.95
+].freeze
+
+# Add to Global Initialization:
+DELIVERY_RULES = DeliveryChargeRules.new(DELIVERY_RULES_DATA).freeze
+
+# Update Test Cases:
+=begin
+# ... (existing ProductCatalogue tests) ...
+
+# Test suite for the Basket system and its components.
+class BasketSystemTest < Minitest::Test
+  def setup
+    @catalogue = CATALOGUE
+    @delivery_rules = DELIVERY_RULES # Add this line
+  end
+
+  # ... (existing ProductCatalogue tests) ...
+
+  # Test delivery charge calculation for various totals.
+  def test_delivery_charge_rules
+    assert_equal 4.95, @delivery_rules.calculate(10.0), 'Total $10.00 should cost $4.95 delivery' # < $50
+    assert_equal 4.95, @delivery_rules.calculate(49.99), 'Total $49.99 should cost $4.95 delivery'
+    assert_equal 2.95, @delivery_rules.calculate(50.0), 'Total $50.00 should cost $2.95 delivery' # >= $50, < $90
+    assert_equal 2.95, @delivery_rules.calculate(89.99), 'Total $89.99 should cost $2.95 delivery'
+    assert_equal 0.0, @delivery_rules.calculate(90.0), 'Total $90.00 should cost $0.00 delivery' # >= $90
+    assert_equal 0.0, @delivery_rules.calculate(150.0), 'Total $150.00 should cost $0.00 delivery'
+  end
+end
+=end

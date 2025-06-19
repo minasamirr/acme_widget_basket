@@ -164,3 +164,108 @@ class BasketSystemTest < Minitest::Test
   end
 end
 =end
+
+# An abstract base class (or interface) for all special offers.
+# This class implements the Strategy pattern, defining the common interface
+# that all concrete offer implementations must adhere to. This allows new offers
+# to be added without modifying the core Basket logic.
+class Offer
+  # Calculates the discount amount provided by this specific offer for the
+  # given items in the basket.
+  # This method must be implemented by concrete subclasses.
+  #
+  # @param basket_items [Array<Product>] An array of Product objects currently in the basket.
+  # @return [Float] The total monetary discount applied by this offer.
+  # @raise [NotImplementedError] If a subclass does not implement this method.
+  def calculate_discount(basket_items)
+    raise NotImplementedError, "#{self.class} must implement #calculate_discount method."
+  end
+
+  # Provides a human-readable description of the offer.
+  # This method can be overridden by concrete subclasses to provide specific details.
+  #
+  # @return [String] A general description of the offer.
+  def description
+    "Generic Offer"
+  end
+end
+
+# Implements the "buy one red widget, get the second half price" special offer.
+# This concrete offer strategy counts red widgets and calculates the discount accordingly.
+class BuyOneGetOneHalfPriceOffer < Offer
+  RED_WIDGET_CODE = 'R01'.freeze # Constant for the product code of a Red Widget.
+
+  # Calculates the discount specifically for the "buy one red widget, get the second half price" offer.
+  # For every two red widgets, one is half price. The discount is rounded to two decimal places.
+  #
+  # @param basket_items [Array<Product>] An array of Product objects currently in the basket.
+  # @return [Float] The total discount from this offer, rounded to two decimal places.
+  def calculate_discount(basket_items)
+    # Filter out only the red widgets from the basket.
+    red_widgets = basket_items.select { |item| item.code == RED_WIDGET_CODE }
+    num_red_widgets = red_widgets.count
+
+    # If there are fewer than 2 red widgets, no discount applies.
+    return 0.0 if num_red_widgets < 2
+
+    # Calculate how many red widgets qualify for half price (e.g., 2 widgets = 1 half price, 3 widgets = 1 half price).
+    # Integer division correctly handles this (e.g., 3 / 2 = 1).
+    num_half_price_widgets = num_red_widgets / 2
+
+    # Get the price of a red widget. Assuming all R01 products have the same price.
+    red_widget_price = red_widgets.first.price
+
+    # Calculate the total discount. The discount for each half-price widget is its price divided by 2.
+    # The discount is rounded to two decimal places to match the example outputs.
+    total_discount = num_half_price_widgets * (red_widget_price / 2.0)
+
+    # Round the final discount to two decimal places for financial accuracy matching the test examples.
+    total_discount.round(2)
+  end
+
+  # Provides a specific description for this offer.
+  #
+  # @return [String] A description of the Buy One Get One Half Price offer.
+  def description
+    "Buy one Red Widget, get the second half price (R01)"
+  end
+end
+
+# Add to Configuration Data:
+OFFERS_DATA = [
+  BuyOneGetOneHalfPriceOffer.new # Initialize the specific offer strategy.
+].freeze
+
+# Add to Global Initialization:
+OFFERS = OFFERS_DATA.freeze
+
+# Update Test Cases:
+=begin
+# ... (existing tests) ...
+
+# Test suite for the Basket system and its components.
+class BasketSystemTest < Minitest::Test
+  def setup
+    @catalogue = CATALOGUE
+    @delivery_rules = DELIVERY_RULES
+    @offers = OFFERS # Add this line
+  end
+
+  # ... (existing tests) ...
+
+  # Test the specific "Buy One Get One Half Price" offer logic.
+  def test_buy_one_get_one_half_price_offer
+    offer = BuyOneGetOneHalfPriceOffer.new
+    red_widget = @catalogue.find_product('R01')
+    green_widget = @catalogue.find_product('G01')
+    red_widget_half_price = (red_widget.price / 2.0).round(2)
+
+    assert_equal 0.0, offer.calculate_discount([green_widget]), 'No R01s, no discount'
+    assert_equal 0.0, offer.calculate_discount([red_widget]), 'One R01, no discount'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget]), 'Two R01s, one half price'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget, red_widget]), 'Three R01s, one half price'
+    assert_equal red_widget_half_price * 2, offer.calculate_discount([red_widget, red_widget, red_widget, red_widget]), 'Four R01s, two half price'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, green_widget, red_widget]), 'Mixed items with two R01s'
+  end
+end
+=end

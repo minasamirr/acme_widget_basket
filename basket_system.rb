@@ -269,3 +269,108 @@ class BasketSystemTest < Minitest::Test
   end
 end
 =end
+
+# The main Basket class, simulating a customer's shopping cart.
+# It aggregates products, applies discounts, and calculates delivery charges
+# based on injected rules and offers.
+class Basket
+  # @return [Array<Product>] The current list of products added to the basket.
+  attr_reader :items
+
+  # Initializes a new Basket instance.
+  # This uses Dependency Injection to provide the necessary components:
+  # product catalogue, delivery rules, and a list of offers.
+  #
+  # @param product_catalogue [ProductCatalogue] An instance of ProductCatalogue to look up products.
+  # @param delivery_charge_rules [DeliveryChargeRules] An instance of DeliveryChargeRules for calculating delivery.
+  # @param offers [Array<Offer>] An array of Offer objects that should be applied to the basket.
+  def initialize(product_catalogue:, delivery_charge_rules:, offers: [])
+    @product_catalogue = product_catalogue
+    @delivery_charge_rules = delivery_charge_rules
+    @offers = offers
+    @items = [] # Initialize an empty array to hold products added to the basket.
+  end
+
+  # Adds a product to the basket using its product code.
+  # The product is looked up in the provided ProductCatalogue.
+  #
+  # @param product_code [String] The unique code of the product to add.
+  # @raise [ArgumentError] If the product code does not exist in the catalogue.
+  def add(product_code)
+    product = @product_catalogue.find_product(product_code)
+    unless product
+      raise ArgumentError, "Product with code '#{product_code}' not found in catalogue."
+    end
+    @items << product # Add the found Product object to the basket's items.
+  end
+
+  # Calculates the total cost of all items in the basket, taking into account
+  # any applied special offers and delivery charges.
+  # The final total is rounded to two decimal places.
+  #
+  # @return [Float] The final calculated total cost of the basket.
+  def total
+    # 1. Calculate the raw sum of all item prices.
+    subtotal = calculate_subtotal
+
+    # 2. Calculate the total discount from all applicable offers.
+    total_discount = calculate_total_discount
+
+    # 3. Calculate the subtotal after applying discounts. This value is used for delivery cost calculation.
+    post_offer_subtotal = subtotal - total_discount
+
+    # 4. Calculate the delivery cost based on the post-offer subtotal.
+    delivery_cost = @delivery_charge_rules.calculate(post_offer_subtotal)
+
+    # 5. Calculate the final total cost.
+    final_total = post_offer_subtotal + delivery_cost
+
+    # 6. Round the final total to two decimal places to match standard currency representation.
+    final_total.round(2)
+  end
+
+  private
+
+  # Helper method to calculate the sum of prices of all items currently in the basket.
+  # This is the gross subtotal before any offers are applied.
+  #
+  # @return [Float] The sum of all item prices.
+  def calculate_subtotal
+    @items.sum(&:price)
+  end
+
+  # Helper method to calculate the combined discount from all configured offers.
+  # Offers are applied sequentially. If multiple offers affect the same item,
+  # their discounts are simply summed up.
+  #
+  # @return [Float] The total discount from all offers.
+  def calculate_total_discount
+    @offers.sum { |offer| offer.calculate_discount(@items) }
+  end
+end
+
+# Update Test Cases:
+=begin
+# ... (existing tests) ...
+
+# Test suite for the Basket system and its components.
+class BasketSystemTest < Minitest::Test
+  def setup
+    @catalogue = CATALOGUE
+    @delivery_rules = DELIVERY_RULES
+    @offers = OFFERS
+  end
+
+  # ... (existing tests) ...
+
+  # Test the `Basket` initialization and `add` method.
+  def test_basket_initialization_and_add_method
+    basket = Basket.new(product_catalogue: @catalogue, delivery_charge_rules: @delivery_rules, offers: @offers)
+    assert_empty basket.items, 'Basket should be empty on initialization'
+    basket.add('R01')
+    assert_equal 1, basket.items.count, 'Basket should have one item after adding R01'
+    assert_equal 'R01', basket.items.first.code, 'Added item should be R01'
+    assert_raises(ArgumentError, "Should raise error for non-existent product code") { basket.add('XYZ') }
+  end
+end
+=end

@@ -428,3 +428,69 @@ end
   end
 end
 =end
+
+# --- Command Line Interface (CLI) Example ---
+# This section demonstrates how to use the Basket system from the command line.
+# You can run this by executing `ruby basket_system.rb` in your terminal.
+
+if __FILE__ == $PROGRAM_NAME
+  puts "========================================"
+  puts "Acme Widget Co. Basket System PoC"
+  puts "========================================"
+  puts "\nAvailable Products:"
+  CATALOGUE.products_by_code.values.each do |product|
+    puts "- #{product}"
+  end
+  puts "\nDelivery Rules:"
+  DELIVERY_RULES_DATA.each do |rule|
+    puts "- Orders over $#{format('%.2f', rule[:threshold])} cost $#{format('%.2f', rule[:cost])} delivery"
+  end
+  puts "\nSpecial Offers:"
+  OFFERS.each do |offer|
+    puts "- #{offer.description}"
+  end
+  puts "========================================"
+
+  # Example 1: B01, G01
+  puts "\n--- Basket 1: B01, G01 ---"
+  basket1 = Basket.new(product_catalogue: CATALOGUE, delivery_charge_rules: DELIVERY_RULES, offers: OFFERS)
+  basket1.add('B01')
+  basket1.add('G01')
+  puts "Items: #{basket1.items.map(&:code).join(', ')}"
+  puts "Total: $#{format('%.2f', basket1.total)}" # Expected: $37.85
+
+  # Example 2: R01, R01
+  puts "\n--- Basket 2: R01, R01 ---"
+  basket2 = Basket.new(product_catalogue: CATALOGUE, delivery_charge_rules: DELIVERY_RULES, offers: OFFERS)
+  basket2.add('R01')
+  basket2.add('R01')
+  puts "Items: #{basket2.items.map(&:code).join(', ')}"
+  puts "Total: $#{format('%.2f', basket2.total)}" # Expected: $54.37
+
+  # Example 3: R01, G01
+  puts "\n--- Basket 3: R01, G01 ---"
+  basket3 = Basket.new(product_catalogue: CATALOGUE, delivery_charge_rules: DELIVERY_RULES, offers: OFFERS)
+  basket3.add('R01')
+  basket3.add('G01')
+  puts "Items: #{basket3.items.map(&:code).join(', ')}"
+  puts "Total: $#{format('%.2f', basket3.total)}" # Expected: $60.85
+
+  # Example 4: B01, B01, R01, R01, R01
+  puts "\n--- Basket 4: B01, B01, R01, R01, R01 ---"
+  basket4 = Basket.new(product_catalogue: CATALOGUE, delivery_charge_rules: DELIVERY_RULES, offers: OFFERS)
+  basket4.add('B01')
+  basket4.add('B01')
+  basket4.add('R01')
+  basket4.add('R01')
+  basket4.add('R01')
+  puts "Items: #{basket4.items.map(&:code).join(', ')}"
+  puts "Total: $#{format('%.2f', basket4.total)}" # Expected: $98.27
+
+  puts "\n--- Adding an unknown product (will raise ArgumentError) ---"
+  begin
+    basket_error = Basket.new(product_catalogue: CATALOGUE, delivery_charge_rules: DELIVERY_RULES, offers: OFFERS)
+    basket_error.add('XYZ')
+  rescue ArgumentError => e
+    puts "Error: #{e.message}"
+  end
+end

@@ -51,57 +51,6 @@ class ProductCatalogue
   end
 end
 
-# --- Configuration Data ---
-# These constants define the initial state for the system.
-# In a larger application, these might come from a database or configuration files.
-
-# Product data for the Acme Widget Co. catalogue.
-PRODUCTS_DATA = [
-  { code: 'R01', name: 'Red Widget', price: 32.95 },
-  { code: 'G01', name: 'Green Widget', price: 24.95 },
-  { code: 'B01', name: 'Blue Widget', price: 7.95 }
-].freeze
-
-# --- Global Initialization (for convenience in CLI/Tests) ---
-
-# Helper method to transform raw product data hashes into Product objects.
-#
-# @param data [Array<Hash>] An array of hashes, each representing product data.
-# @return [Array<Product>] An array of initialized Product objects.
-def create_products(data)
-  data.map { |p| Product.new(code: p[:code], name: p[:name], price: p[:price]) }
-end
-
-# Initialize the ProductCatalogue with the defined products.
-CATALOGUE = ProductCatalogue.new(create_products(PRODUCTS_DATA)).freeze
-
-# --- Test Cases (Minitest Framework) ---
-# To run these tests:
-# 1. Ensure you have Minitest installed: `gem install minitest`
-# 2. Uncomment the `require 'minitest/autorun'` line below.
-# 3. Save this file (e.g., `basket_system.rb`).
-# 4. Run from your terminal: `ruby -r minitest/autorun basket_system.rb`
-
-=begin
-require 'minitest/autorun'
-
-# Test suite for the Basket system and its components.
-class BasketSystemTest < Minitest::Test
-  # `setup` method is called before each test method runs.
-  # It initializes the common dependencies for tests.
-  def setup
-    @catalogue = CATALOGUE
-  end
-
-  # Test basic functionality of ProductCatalogue.
-  def test_product_catalogue
-    assert_equal 'Red Widget', @catalogue.find_product('R01').name
-    assert_equal 32.95, @catalogue.find_product('R01').price
-    assert_nil @catalogue.find_product('XYZ'), 'Should return nil for non-existent product'
-  end
-end
-=end
-
 # Encapsulates the logic for calculating delivery charges based on the basket's total value.
 # The rules are defined by thresholds and associated costs.
 class DeliveryChargeRules
@@ -129,41 +78,6 @@ class DeliveryChargeRules
     rule ? rule[:cost] : 0.0
   end
 end
-
-# Add to Configuration Data:
-DELIVERY_RULES_DATA = [
-  { threshold: 90.0, cost: 0.0 }, # Orders $90 or more have free delivery
-  { threshold: 50.0, cost: 2.95 }, # For orders under $90 (but >= $50), delivery costs $2.95
-  { threshold: 0.0, cost: 4.95 } # Orders under $50 (but >= $0), cost $4.95
-].freeze
-
-# Add to Global Initialization:
-DELIVERY_RULES = DeliveryChargeRules.new(DELIVERY_RULES_DATA).freeze
-
-# Update Test Cases:
-=begin
-# ... (existing ProductCatalogue tests) ...
-
-# Test suite for the Basket system and its components.
-class BasketSystemTest < Minitest::Test
-  def setup
-    @catalogue = CATALOGUE
-    @delivery_rules = DELIVERY_RULES # Add this line
-  end
-
-  # ... (existing ProductCatalogue tests) ...
-
-  # Test delivery charge calculation for various totals.
-  def test_delivery_charge_rules
-    assert_equal 4.95, @delivery_rules.calculate(10.0), 'Total $10.00 should cost $4.95 delivery' # < $50
-    assert_equal 4.95, @delivery_rules.calculate(49.99), 'Total $49.99 should cost $4.95 delivery'
-    assert_equal 2.95, @delivery_rules.calculate(50.0), 'Total $50.00 should cost $2.95 delivery' # >= $50, < $90
-    assert_equal 2.95, @delivery_rules.calculate(89.99), 'Total $89.99 should cost $2.95 delivery'
-    assert_equal 0.0, @delivery_rules.calculate(90.0), 'Total $90.00 should cost $0.00 delivery' # >= $90
-    assert_equal 0.0, @delivery_rules.calculate(150.0), 'Total $150.00 should cost $0.00 delivery'
-  end
-end
-=end
 
 # An abstract base class (or interface) for all special offers.
 # This class implements the Strategy pattern, defining the common interface
@@ -230,45 +144,6 @@ class BuyOneGetOneHalfPriceOffer < Offer
     "Buy one Red Widget, get the second half price (R01)"
   end
 end
-
-# Add to Configuration Data:
-OFFERS_DATA = [
-  BuyOneGetOneHalfPriceOffer.new # Initialize the specific offer strategy.
-].freeze
-
-# Add to Global Initialization:
-OFFERS = OFFERS_DATA.freeze
-
-# Update Test Cases:
-=begin
-# ... (existing tests) ...
-
-# Test suite for the Basket system and its components.
-class BasketSystemTest < Minitest::Test
-  def setup
-    @catalogue = CATALOGUE
-    @delivery_rules = DELIVERY_RULES
-    @offers = OFFERS # Add this line
-  end
-
-  # ... (existing tests) ...
-
-  # Test the specific "Buy One Get One Half Price" offer logic.
-  def test_buy_one_get_one_half_price_offer
-    offer = BuyOneGetOneHalfPriceOffer.new
-    red_widget = @catalogue.find_product('R01')
-    green_widget = @catalogue.find_product('G01')
-    red_widget_half_price = (red_widget.price / 2.0).round(2)
-
-    assert_equal 0.0, offer.calculate_discount([green_widget]), 'No R01s, no discount'
-    assert_equal 0.0, offer.calculate_discount([red_widget]), 'One R01, no discount'
-    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget]), 'Two R01s, one half price'
-    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget, red_widget]), 'Three R01s, one half price'
-    assert_equal red_widget_half_price * 2, offer.calculate_discount([red_widget, red_widget, red_widget, red_widget]), 'Four R01s, two half price'
-    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, green_widget, red_widget]), 'Mixed items with two R01s'
-  end
-end
-=end
 
 # The main Basket class, simulating a customer's shopping cart.
 # It aggregates products, applies discounts, and calculates delivery charges
@@ -349,19 +224,101 @@ class Basket
   end
 end
 
-# Update Test Cases:
+# --- Configuration Data ---
+# These constants define the initial state for the system.
+# In a larger application, these might come from a database or configuration files.
+
+# Product data for the Acme Widget Co. catalogue.
+PRODUCTS_DATA = [
+  { code: 'R01', name: 'Red Widget', price: 32.95 },
+  { code: 'G01', name: 'Green Widget', price: 24.95 },
+  { code: 'B01', name: 'Blue Widget', price: 7.95 }
+].freeze
+
+# Delivery charge rules based on basket total.
+# Ordered by threshold in descending order, as expected by DeliveryChargeRules.
+DELIVERY_RULES_DATA = [
+  { threshold: 90.0, cost: 0.0 }, # Orders $90 or more have free delivery
+  { threshold: 50.0, cost: 2.95 }, # For orders under $90 (but >= $50), delivery costs $2.95
+  { threshold: 0.0, cost: 4.95 } # Orders under $50 (but >= $0), cost $4.95
+].freeze
+
+# Instances of special offers to be applied.
+# Currently, only one offer is defined. More offers could be added here.
+OFFERS_DATA = [
+  BuyOneGetOneHalfPriceOffer.new # Initialize the specific offer strategy.
+].freeze
+
+# --- Global Initialization (for convenience in CLI/Tests) ---
+
+# Helper method to transform raw product data hashes into Product objects.
+#
+# @param data [Array<Hash>] An array of hashes, each representing product data.
+# @return [Array<Product>] An array of initialized Product objects.
+def create_products(data)
+  data.map { |p| Product.new(code: p[:code], name: p[:name], price: p[:price]) }
+end
+
+# Initialize the ProductCatalogue with the defined products.
+CATALOGUE = ProductCatalogue.new(create_products(PRODUCTS_DATA)).freeze
+
+# Initialize the DeliveryChargeRules with the defined delivery thresholds and costs.
+DELIVERY_RULES = DeliveryChargeRules.new(DELIVERY_RULES_DATA).freeze
+
+# The array of instantiated Offer objects.
+OFFERS = OFFERS_DATA.freeze
+
+# --- Test Cases (Minitest Framework) ---
+# To run these tests:
+# 1. Ensure you have Minitest installed: `gem install minitest`
+# 2. Uncomment the `require 'minitest/autorun'` line below.
+# 3. Save this file (e.g., `basket_system.rb`).
+# 4. Run from your terminal: `ruby -r minitest/autorun basket_system.rb`
+
 =begin
-# ... (existing tests) ...
+require 'minitest/autorun'
 
 # Test suite for the Basket system and its components.
 class BasketSystemTest < Minitest::Test
+  # `setup` method is called before each test method runs.
+  # It initializes the common dependencies for tests.
   def setup
     @catalogue = CATALOGUE
     @delivery_rules = DELIVERY_RULES
     @offers = OFFERS
   end
 
-  # ... (existing tests) ...
+  # Test basic functionality of ProductCatalogue.
+  def test_product_catalogue
+    assert_equal 'Red Widget', @catalogue.find_product('R01').name
+    assert_equal 32.95, @catalogue.find_product('R01').price
+    assert_nil @catalogue.find_product('XYZ'), 'Should return nil for non-existent product'
+  end
+
+  # Test delivery charge calculation for various totals.
+  def test_delivery_charge_rules
+    assert_equal 4.95, @delivery_rules.calculate(10.0), 'Total $10.00 should cost $4.95 delivery' # < $50
+    assert_equal 4.95, @delivery_rules.calculate(49.99), 'Total $49.99 should cost $4.95 delivery'
+    assert_equal 2.95, @delivery_rules.calculate(50.0), 'Total $50.00 should cost $2.95 delivery' # >= $50, < $90
+    assert_equal 2.95, @delivery_rules.calculate(89.99), 'Total $89.99 should cost $2.95 delivery'
+    assert_equal 0.0, @delivery_rules.calculate(90.0), 'Total $90.00 should cost $0.00 delivery' # >= $90
+    assert_equal 0.0, @delivery_rules.calculate(150.0), 'Total $150.00 should cost $0.00 delivery'
+  end
+
+  # Test the specific "Buy One Get One Half Price" offer logic.
+  def test_buy_one_get_one_half_price_offer
+    offer = BuyOneGetOneHalfPriceOffer.new
+    red_widget = @catalogue.find_product('R01')
+    green_widget = @catalogue.find_product('G01')
+    red_widget_half_price = (red_widget.price / 2.0).round(2)
+
+    assert_equal 0.0, offer.calculate_discount([green_widget]), 'No R01s, no discount'
+    assert_equal 0.0, offer.calculate_discount([red_widget]), 'One R01, no discount'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget]), 'Two R01s, one half price'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, red_widget, red_widget]), 'Three R01s, one half price'
+    assert_equal red_widget_half_price * 2, offer.calculate_discount([red_widget, red_widget, red_widget, red_widget]), 'Four R01s, two half price'
+    assert_equal red_widget_half_price, offer.calculate_discount([red_widget, green_widget, red_widget]), 'Mixed items with two R01s'
+  end
 
   # Test the `Basket` initialization and `add` method.
   def test_basket_initialization_and_add_method
@@ -372,12 +329,6 @@ class BasketSystemTest < Minitest::Test
     assert_equal 'R01', basket.items.first.code, 'Added item should be R01'
     assert_raises(ArgumentError, "Should raise error for non-existent product code") { basket.add('XYZ') }
   end
-end
-=end
-
-# Update Test Cases (inside `BasketSystemTest`):
-=begin
-# ... (existing tests) ...
 
   # --- Example Basket Tests from the Problem Description ---
   # These tests directly verify the example outputs provided in the prompt.

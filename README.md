@@ -1,95 +1,98 @@
 Acme Widget Co. Basket System Proof of Concept
 
-This project implements a proof-of-concept for Acme Widget Co.'s new sales system, focusing on core basket functionality, including product management, dynamic delivery charges, and special offers.
-Design Principles and Structure
+Hey there! This project is my take on Acme Widget Co.'s new sales system, specifically focusing on how the shopping basket works. It covers managing products, figuring out delivery costs, and applying those cool special offers.
+How I Approached the Design
 
-The solution is crafted with the following software engineering principles in mind, as highlighted in the assignment brief:
+I built this with a few key software engineering ideas in mind, just like you'd expect from a good team member. The goal was to make it easy to understand, flexible, and ready for future changes:
 
-    Good Separation / Encapsulation of Concerns:
+    Keeping Things Separate (Encapsulation):
 
-        Each class (Product, ProductCatalogue, DeliveryChargeRules, Offer (base class), BuyOneGetOneHalfPriceOffer, Basket) has a single, well-defined responsibility.
+        Each part of the system, like Product, ProductCatalogue, DeliveryChargeRules, and Basket, has its own clear job.
 
-        Internal details (e.g., how products are stored in ProductCatalogue) are hidden from external users of the class.
+        I've kept the internal workings of each part hidden. For example, the Basket doesn't need to know how the ProductCatalogue stores its products, just that it can find them.
 
-    Small, Accurate Interfaces / Classes:
+    Clean and Focused Classes:
 
-        Classes expose minimal public methods, providing only what's necessary for their interaction. For instance, Basket provides add and total as its primary interface.
+        I aimed for small, precise classes. Each one has just the methods it needs to do its job, nothing extra. So, the Basket pretty much only cares about adding items and calculating the total.
 
-    Dependency Injection:
+    Dependency Injection (Passing Things In):
 
-        The Basket class does not create its own ProductCatalogue, DeliveryChargeRules, or Offer instances. Instead, these dependencies are injected (passed in) during the Basket's initialization (initialize method).
+        Instead of letting the Basket create its own ProductCatalogue or DeliveryChargeRules, I "inject" these into the Basket when it's set up.
 
-        This design makes the Basket class more flexible, testable, and independent of concrete implementations of its dependencies. For example, you could swap out DeliveryChargeRules for a different set of rules without modifying the Basket itself.
+        This makes the Basket much more flexible. If we ever want to change how delivery rules work, we can just swap out the DeliveryChargeRules object without touching the Basket itself!
 
-    Strategy Pattern / Extensible Code:
+    Strategy Pattern (Making Offers Flexible):
 
-        The Offer system explicitly uses the Strategy pattern.
+        The way special offers work uses something called the Strategy pattern.
 
-        Offer acts as an abstract base class (or interface in other languages), defining the calculate_discount method.
+        I've got a basic Offer class that sets the stage, defining how any offer should calculate_discount.
 
-        BuyOneGetOneHalfPriceOffer is a concrete strategy that implements this method for a specific offer.
+        Then, specific offers, like BuyOneGetOneHalfPriceOffer, just follow that pattern.
 
-        This allows for easy addition of new offer types (e.g., "Buy One Get One Free", "X% off total") simply by creating new classes that inherit from Offer and implement calculate_discount, without altering the Basket's core logic.
+        This is super handy because it means we can add brand new types of offers (like "buy one get one free" or "X% off") without having to mess with the core Basket logic. It just knows how to ask an Offer for its discount.
 
-Project Structure
+A Quick Look at the Project Structure
 
-The entire solution is contained within a single Ruby file (basket_system.rb in the provided code block for your convenience). In a larger project, these classes would typically reside in separate files within a lib/ directory.
+For this proof of concept, I've kept everything in one Ruby file (basket_system.rb). In a bigger, real-world project, you'd usually split these classes into individual files, probably in a lib/ directory, for better organization.
 
-    Product: Represents a single widget with a code, name, and price.
+Here are the main components:
 
-    ProductCatalogue: Manages a collection of Product objects, providing a way to look them up by code.
+    Product: This defines what a widget is – its code, name, and price.
 
-    DeliveryChargeRules: Calculates delivery costs based on predefined thresholds and the basket's total.
+    ProductCatalogue: Our shop's master list of all available products, letting us find them quickly by their code.
 
-    Offer (Base Class): Defines the interface for all special offers.
+    DeliveryChargeRules: Handles all the logic for calculating shipping costs based on the order total.
 
-    BuyOneGetOneHalfPriceOffer: A concrete implementation of an Offer for the "buy one red widget, get the second half price" rule.
+    Offer (Base Class): The blueprint for any special offer we might want to create.
 
-    Basket: The core class representing the shopping basket. It orchestrates product adding, offer application, and total calculation.
+    BuyOneGetOneHalfPriceOffer: The specific offer we have right now: "buy one red widget, get the second half price."
 
-Assumptions Made
+    Basket: This is the heart of it all – it's where customers add their items, and it figures out the final total after all discounts and delivery charges.
 
-    Product Codes Uniqueness: It's assumed that all product codes (e.g., R01, G01, B01) are unique identifiers for products.
+What I Assumed
 
-    Currency: Prices and totals are assumed to be in the same currency (e.g., USD, as indicated by $), and all calculations are performed using floating-point numbers.
+Just so we're clear, here are a few things I assumed while building this:
+
+    Unique Product Codes: I'm assuming that each product code (like R01, G01, B01) is unique and identifies a single type of product.
+
+    Currency: All prices and totals are in the same currency (looking at the examples, it seems like USD, given the $), and I'm using standard floating-point numbers for calculations.
 
     Rounding:
 
-        The "buy one red widget, get the second half price" discount is rounded to two decimal places before being subtracted from the subtotal. This ensures the example outputs match precisely.
+        The "buy one red widget, get the second half price" discount gets rounded to two decimal places before it's taken off the subtotal. This helps us match the example totals exactly.
 
-        The final Basket#total is rounded to two decimal places.
+        The final total for the whole basket is also rounded to two decimal places.
 
-    Offer Application Order: If multiple offers were present, they would be applied sequentially in the order they are provided to the Basket's offers array. For this specific problem, there's only one offer.
+    Offer Order: If we had multiple offers, they'd be applied in the order they're given to the Basket. For now, we only have one!
 
-    Delivery Calculation Basis: Delivery charges are calculated on the basket's subtotal after all applicable offers have been applied.
+    Delivery Calculation: Delivery charges are worked out after any offers have been applied to the item total.
 
-    Immutability of Products: Once Product objects are created and stored in the ProductCatalogue, their attributes (code, name, price) are not expected to change.
+    Products Don't Change: Once a product is set up in the ProductCatalogue, I'm not expecting its code, name, or price to change.
 
-How to Run
+How to Get It Running
 
-    Save the Code: Save the provided Ruby code into a file named basket_system.rb.
+It's super easy to get this up and running:
 
-    Run the CLI Examples:
-    Open your terminal or command prompt, navigate to the directory where you saved basket_system.rb, and run:
+    Save the Code: Just save the Ruby code into a file. Let's call it basket_system.rb.
+
+    Run the Examples (CLI):
+    Open your terminal or command prompt, go to the folder where you saved basket_system.rb, and type:
 
     ruby basket_system.rb
 
+    This will run through the examples I've included at the bottom of the file, showing how the basket calculates totals for different scenarios.
 
-    This will execute the CLI examples defined at the bottom of the file, demonstrating the basket's functionality with the provided test cases.
+    Run the Tests (Minitest):
+    I've also included some unit tests using Ruby's built-in Minitest framework. They're commented out, but you can quickly run them:
 
-    Run the Unit Tests (Minitest):
-    The code includes a commented-out section with unit tests using Ruby's built-in Minitest framework.
-
-        Install Minitest (if you don't have it):
+        First, install Minitest (if you don't have it):
 
         gem install minitest
 
+        Then, uncomment the tests: In basket_system.rb, find the require 'minitest/autorun' line and the entire class BasketSystemTest < Minitest::Test ... end block, and remove the =begin and =end lines around them.
 
-        Uncomment Tests: In basket_system.rb, uncomment the require 'minitest/autorun' line and the entire class BasketSystemTest < Minitest::Test ... end block.
-
-        Run Tests:
+        Finally, run the tests:
 
         ruby -r minitest/autorun basket_system.rb
 
-
-        This command loads Minitest and then executes the script, which in turn runs the defined tests. You should see output indicating that all tests passed.
+        You should see a nice message confirming all the tests passed!
